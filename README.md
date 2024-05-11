@@ -15,3 +15,14 @@
 6) Generate model
 7) Save the model as a ‘.msh’ file
 
+---
+# Point Cloud To Mesh
+
+### Requirements 
+* pip install pyvista
+* pip install numpy
+
+
+### Creating a mesh from point cloud data:
+
+
