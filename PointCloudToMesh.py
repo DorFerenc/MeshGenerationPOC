@@ -3,6 +3,7 @@ import pyvista as pv
 import multiprocessing
 from typing import Optional
 import logging
+import os
 
 
 class PointCloudToMesh:
@@ -236,6 +237,35 @@ class PointCloudToMesh:
             plotter.add_mesh(self.mesh, color='orange', opacity=0.5, name='Mesh')
 
         plotter.show()
+
+    def save_mesh(self, filename: str) -> None:
+        """
+        Save the generated mesh to a file.
+
+        Args:
+            filename (str): The name of the file to save the mesh to.
+                            Supported formats: .ply, .vtp, .stl, .vtk
+
+        Raises:
+            ValueError: If no mesh has been generated or if the file extension is not supported.
+        """
+        if self.mesh is None:
+            self.logger.error("No mesh generated to save")
+            raise ValueError("No mesh generated. Use generate_mesh() first.")
+
+        supported_extensions = ['.ply', '.vtp', '.stl', '.vtk']
+        file_extension = os.path.splitext(filename)[1].lower()
+
+        if file_extension not in supported_extensions:
+            self.logger.error(f"Unsupported file extension. Supported formats: {', '.join(supported_extensions)}")
+            raise ValueError(f"Unsupported file extension. Supported formats: {', '.join(supported_extensions)}")
+
+        try:
+            self.mesh.save(filename)
+            self.logger.info(f"Mesh saved successfully to {filename}")
+        except Exception as e:
+            self.logger.error(f"Error saving mesh: {str(e)}")
+            raise
 
     #########################################################################
     # currently, not in use as default value of 0.0002 works best

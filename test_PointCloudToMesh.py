@@ -43,6 +43,7 @@ class TestPointCloudToMesh(unittest.TestCase):
         self.csv_file = os.path.join(self.temp_dir, "test_point_cloud.csv")
         self.sample_data = np.random.rand(100, 3)
         np.savetxt(self.csv_file, self.sample_data, delimiter=',')
+        self.temp_mesh_files = []
 
     def tearDown(self):
         """
@@ -51,6 +52,9 @@ class TestPointCloudToMesh(unittest.TestCase):
         This method removes the temporary CSV file and directory created during setUp.
         """
         os.remove(self.csv_file)
+        for temp_file in self.temp_mesh_files:
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
         os.rmdir(self.temp_dir)
 
     def test_load_point_cloud_from_csv(self):
@@ -126,6 +130,39 @@ class TestPointCloudToMesh(unittest.TestCase):
         """
         with self.assertRaises(ValueError):
             self.pc_to_mesh.refine_mesh()
+
+    def test_save_mesh(self):
+        """
+        Test the save_mesh method for all supported formats.
+        """
+        self.pc_to_mesh.load_point_cloud_from_csv(self.csv_file)
+        self.pc_to_mesh.generate_mesh()
+
+        supported_extensions = ['.ply', '.vtp', '.stl', '.vtk']
+        for ext in supported_extensions:
+            temp_mesh_file = os.path.join(self.temp_dir, f"test_mesh{ext}")
+            self.temp_mesh_files.append(temp_mesh_file)
+            self.pc_to_mesh.save_mesh(temp_mesh_file)
+
+            self.assertTrue(os.path.exists(temp_mesh_file))
+            self.assertTrue(os.path.getsize(temp_mesh_file) > 0)
+
+    def test_save_mesh_without_generated_mesh(self):
+        """
+        Test the save_mesh method without generating a mesh first.
+        """
+        with self.assertRaises(ValueError):
+            self.pc_to_mesh.save_mesh("test.ply")
+
+    def test_save_mesh_invalid_filename(self):
+        """
+        Test the save_mesh method with an invalid filename.
+        """
+        self.pc_to_mesh.load_point_cloud_from_csv(self.csv_file)
+        self.pc_to_mesh.generate_mesh()
+
+        with self.assertRaises(ValueError):
+            self.pc_to_mesh.save_mesh("invalid_filename.txt")
 
 
 if __name__ == '__main__':
