@@ -25,4 +25,8 @@
 
 ### Creating a mesh from point cloud data:
 
-
+---
+### Using tests:
+``` 
+python -m unittest test_PointCloudToMesh.py
+```
