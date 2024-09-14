@@ -8,7 +8,7 @@ This project demonstrates the process of generating a 3D mesh from point cloud d
 - Generate 3D meshes using Delaunay triangulation
 - Apply mesh refinement techniques including Laplacian and bilateral smoothing
 - Visualize point clouds and generated meshes
-- Save generated meshes in .msh format
+- Save generated meshes in various formats (.ply, .vtp, .stl, .vtk)
 
 ## Requirements
 
@@ -41,7 +41,7 @@ pc_to_mesh.generate_mesh()
 # Refine mesh
 pc_to_mesh.refine_mesh()
 
-# Save the mesh
+# Save the mesh (supported formats: .ply, .vtp, .stl, .vtk)
 pc_to_mesh.save_mesh("output_mesh.msh")
 
 # Visualize results
@@ -55,8 +55,8 @@ pc_to_mesh.visualize_mesh()
 3. Remove degenerate triangles
 4. Apply Laplacian smoothing
 5. Apply bilateral smoothing
-6. Save the resulting mesh as a .msh file
-7. (Optional) Visualize the resulting mesh
+6. Save the resulting mesh in one of the supported formats (.ply, .vtp, .stl, .vtk)
+8. (Optional) Visualize the resulting mesh
 
 ## Testing
 
@@ -71,7 +71,7 @@ python -m unittest test_PointCloudToMesh.py
 - The project uses PyVista for mesh operations and visualization.
 - Logging is implemented to track the mesh generation and refinement process.
 - Error handling is in place to manage common issues in the mesh generation pipeline.
-- Generated meshes can be saved in .msh format for further use or analysis.
+- Generated meshes can be saved in .ply, .vtp, .stl, or .vtk formats for further use or analysis.
 
 ## Future Improvements
 
