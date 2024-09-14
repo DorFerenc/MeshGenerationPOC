@@ -69,7 +69,7 @@ elements are determined by the characteristic length lc specified earlier. """
 gmsh.model.mesh.generate()
 
 # Write mesh data:
-gmsh.write("cubeMESH.msh")
+gmsh.write("../cubeMESH.msh")
 
 # Creates  graphical user interface
 """This part of the code creates a graphical user interface (GUI) for visualizing the mesh if the string 'close' is 

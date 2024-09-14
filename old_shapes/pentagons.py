@@ -94,7 +94,7 @@ gmsh.model.geo.synchronize()
 gmsh.model.mesh.generate()
 
 # Write mesh data:
-gmsh.write("pentagonMESH.msh")
+gmsh.write("../pentagonMESH.msh")
 
 # Creates graphical user interface
 if 'close' not in sys.argv:
