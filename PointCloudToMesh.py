@@ -39,7 +39,6 @@ class PointCloudToMesh:
         self.point_cloud = points
         self.logger.info(f"Point cloud set with {len(points)} points")
 
-
     def calculate_optimal_alpha(self, percentile=95):
         """
         Calculate an optimal alpha value for mesh generation based on point cloud characteristics.
