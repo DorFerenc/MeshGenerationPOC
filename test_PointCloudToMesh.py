@@ -4,7 +4,7 @@ import pyvista as pv
 from PointCloudToMesh import PointCloudToMesh
 import os
 import tempfile
-
+import logging
 
 class TestPointCloudToMesh(unittest.TestCase):
     """
@@ -14,6 +14,20 @@ class TestPointCloudToMesh(unittest.TestCase):
     including data loading, mesh generation, and mesh refinement operations.
     """
 
+    @classmethod
+    def setUpClass(cls):
+        """Set up class-level resources."""
+        # Store the original logging level
+        cls.original_log_level = logging.getLogger('PointCloudToMesh').level
+        # Set the logging level to CRITICAL to suppress most messages during tests
+        logging.getLogger('PointCloudToMesh').setLevel(logging.CRITICAL)
+
+    @classmethod
+    def tearDownClass(cls):
+        """Clean up class-level resources."""
+        # Restore the original logging level
+        logging.getLogger('PointCloudToMesh').setLevel(cls.original_log_level)
+
     def setUp(self):
         """
         Set up the test environment before each test method.
@@ -22,6 +36,7 @@ class TestPointCloudToMesh(unittest.TestCase):
         initializes a PointCloudToMesh object for testing.
         """
         self.pc_to_mesh = PointCloudToMesh()
+        # self.pc_to_mesh.logger.setLevel(logging.ERROR)  # Reduce log output during tests
 
         # Create a temporary CSV file with sample point cloud data
         self.temp_dir = tempfile.mkdtemp()
@@ -78,18 +93,6 @@ class TestPointCloudToMesh(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.pc_to_mesh.generate_mesh()
 
-    # def test_apply_laplacian_smoothing(self):
-    #     """
-    #     Test the apply_laplacian_smoothing method.
-    #
-    #     This test verifies that the method successfully applies Laplacian smoothing to the generated mesh.
-    #     """
-    #     self.pc_to_mesh.load_point_cloud_from_csv(self.csv_file)
-    #     self.pc_to_mesh.generate_mesh()
-    #     original_points = self.pc_to_mesh.mesh.points.copy()
-    #     self.pc_to_mesh.apply_laplacian_smoothing()
-    #     self.assertFalse(np.array_equal(original_points, self.pc_to_mesh.mesh.points))
-
     def test_apply_bilateral_smoothing(self):
         """
         Test the apply_bilateral_smoothing method.
@@ -114,6 +117,15 @@ class TestPointCloudToMesh(unittest.TestCase):
         original_points = self.pc_to_mesh.mesh.points.copy()
         self.pc_to_mesh.refine_mesh()
         self.assertFalse(np.array_equal(original_points, self.pc_to_mesh.mesh.points))
+
+    def test_refine_mesh_without_generated_mesh(self):
+        """
+        Test the refine_mesh method without generating a mesh first.
+
+        This test verifies that the method raises a ValueError when called before generating a mesh.
+        """
+        with self.assertRaises(ValueError):
+            self.pc_to_mesh.refine_mesh()
 
 
 if __name__ == '__main__':
