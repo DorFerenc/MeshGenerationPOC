@@ -33,7 +33,7 @@ pip install pillow
 - `app2.py`: Main application script that orchestrates the entire process
 - `test_PointCloudToMesh.py`: Unit tests for the `PointCloudToMesh` class
 
-## Process
+## Process Overview
 
 1. **Point Cloud Generation**:
    - The `GenColoredPointCloud.py` script generates colored point clouds for sphere, cube, and torus shapes.
@@ -92,7 +92,12 @@ To run the test suite:
 
 ```
 python -m unittest test_PointCloudToMesh.py
+python -m unittest test_MeshToOBJConverter.py
 ```
+
+The tests cover the following:
+- Mesh-to-OBJ conversion: Ensures that the mesh can be properly converted to OBJ format and that texture images and MTL files are generated correctly.
+- Point cloud to mesh generation: Validates that the point cloud is converted into a 3D mesh with correct triangulation and UV mapping.
 
 ## Future Improvements
 
