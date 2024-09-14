@@ -1,6 +1,6 @@
 # Mesh Generation POC
 
-This project demonstrates the process of generating a 3D mesh from point cloud data using the Delaunay triangulation algorithm. It includes functionality for generating colored point clouds, loading point cloud data, generating meshes with optimal alpha values, applying texture mapping, and visualizing the results.
+This project demonstrates the process of generating a 3D mesh from point cloud data using the Delaunay triangulation algorithm. It includes functionality for generating colored point clouds, loading point cloud data, generating meshes with optimal alpha values, applying texture mapping, converting to OBJ format, and visualizing the results.
 
 ## Features
 
@@ -8,8 +8,9 @@ This project demonstrates the process of generating a 3D mesh from point cloud d
 - Load point cloud data from CSV files
 - Generate 3D meshes using Delaunay triangulation with automatic optimal alpha calculation
 - Apply texture mapping to the generated meshes
+- Convert textured meshes to OBJ format with associated MTL and texture files
 - Visualize point clouds, generated meshes, and textured meshes
-- Save generated meshes in various formats (.ply, .vtp, .stl, .vtk)
+- Save generated meshes in various formats (.ply, .vtp, .stl, .vtk, .obj)
 
 ## Requirements
 
@@ -20,6 +21,7 @@ pip install numpy
 pip install pandas
 pip install pyvista
 pip install scipy
+pip install pillow
 ```
 
 ## Project Structure
@@ -27,6 +29,7 @@ pip install scipy
 - `GenColoredPointCloud.py`: Generates colored point clouds for different shapes
 - `PointCloudToMesh.py`: Contains the `PointCloudToMesh` class for mesh generation
 - `TextureMapper.py`: Contains the `TextureMapper` class for texture mapping
+- `MeshToOBJConverter.py`: Contains the `MeshToOBJConverter` class for converting meshes to OBJ format
 - `app2.py`: Main application script that orchestrates the entire process
 - `test_PointCloudToMesh.py`: Unit tests for the `PointCloudToMesh` class
 
@@ -49,18 +52,23 @@ pip install scipy
 4. **Texture Mapping**:
    - The `TextureMapper` class applies texture to the generated mesh.
    - It maps colors from the point cloud to the mesh vertices.
-   - A spherical UV mapping is applied to the mesh.
+   - A smart UV mapping is applied to the mesh based on its shape (planar, cylindrical, or spherical).
    - The texture is smoothed to improve visual quality.
 
-5. **Visualization**:
+5. **OBJ Conversion**:
+   - The `MeshToOBJConverter` class converts the textured mesh to OBJ format.
+   - It generates the OBJ file, MTL file, and a texture image.
+   - The converter handles proper referencing between OBJ, MTL, and texture files.
+
+6. **Visualization**:
    - The process includes visualization steps for:
      - The original point cloud
      - The generated mesh
      - The textured mesh
    - Visualization is done using PyVista, providing interactive 3D views of each step.
 
-6. **Mesh Saving**:
-   - The final textured mesh can be saved in various formats (.ply, .vtp, .stl, .vtk) for further use or analysis.
+7. **Mesh Saving**:
+   - The final textured mesh can be saved in various formats (.ply, .vtp, .stl, .vtk, .obj) for further use or analysis.
 
 ## Usage
 
@@ -71,7 +79,7 @@ To use this project:
    python GenColoredPointCloud.py
    ```
 
-2. Run `app2.py` to process the point cloud, generate the mesh, and apply texturing:
+2. Run `app2.py` to process the point cloud, generate the mesh, apply texturing, and convert to OBJ:
    ```
    python app2.py
    ```
@@ -93,5 +101,6 @@ python -m unittest test_PointCloudToMesh.py
 - Optimize performance for large point cloud datasets
 - Enhance texture mapping for complex geometries
 - Implement automatic shape detection for optimal alpha calculation
+- Improve OBJ conversion for better compatibility with various 3D software
 
 For more detailed information about the implementation, please refer to the source code and inline documentation.

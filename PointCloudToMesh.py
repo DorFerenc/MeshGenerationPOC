@@ -36,6 +36,12 @@ class PointCloudToMesh:
         Args:
             points (np.ndarray): Array of 3D point coordinates.
         """
+        # self.point_cloud = points
+        # self.logger.info(f"Point cloud set with {len(points)} points")
+        if len(points) == 0:
+            raise ValueError("Point cloud cannot be empty")
+        if points.shape[1] != 3:
+            raise ValueError("Point cloud must have 3 dimensions (x, y, z)")
         self.point_cloud = points
         self.logger.info(f"Point cloud set with {len(points)} points")
 
@@ -91,6 +97,8 @@ class PointCloudToMesh:
         if self.point_cloud is None:
             self.logger.error("No point cloud data loaded")
             raise ValueError("No point cloud data loaded. Use set_point_cloud() first.")
+        if len(self.point_cloud) < 4:
+            raise ValueError("At least 4 points are required to generate a 3D mesh")
 
         if alpha is None:
             alpha = self.calculate_optimal_alpha()
@@ -118,6 +126,9 @@ class PointCloudToMesh:
                     f"Mesh quality - Min: {min_quality:.4f}, Max: {max_quality:.4f}, Avg: {avg_quality:.4f}")
             else:
                 self.logger.warning("Unable to compute mesh quality. No cells in the mesh.")
+
+            self.mesh = self.mesh.extract_surface()
+            return self.mesh
 
         except Exception as e:
             self.logger.error(f"Error generating mesh: {str(e)}")
