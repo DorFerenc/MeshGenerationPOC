@@ -101,9 +101,9 @@ def visualize_point_cloud(points, colors=None):
 def main():
     # Load point cloud from CSV
     # csv_file = "colored_sphere_point_cloud.csv"  # Replace with your CSV file name
-    # csv_file = "colored_cube_point_cloud.csv"  # Replace with your CSV file name
+    csv_file = "colored_cube_point_cloud.csv"  # Replace with your CSV file name
     # csv_file = "colored_torus_point_cloud.csv.csv"  # Replace with your CSV file name
-    csv_file = "point_cloud.csv"  # Replace with your CSV file name
+    # csv_file = "point_cloud.csv"  # Replace with your CSV file name
     logger.info(f"Loading point cloud from {csv_file}...")
     points, colors = load_point_cloud_from_csv(csv_file)
 
@@ -123,8 +123,9 @@ def main():
     # Step 2: Generate and visualize mesh
     logger.info("Generating mesh...")
     try:
-        # pc_to_mesh.generate_mesh(alpha=0.1)  # You may need to adjust alpha based on your data
-        pc_to_mesh.generate_mesh()  # You may need to adjust alpha based on your data
+        # Calculate optimal alpha and generate mesh
+        optimal_alpha = pc_to_mesh.calculate_optimal_alpha()
+        pc_to_mesh.generate_mesh(alpha=optimal_alpha)
         logger.info("Mesh generated successfully.")
     except Exception as e:
         logger.error(f"Error generating mesh: {str(e)}")
@@ -132,6 +133,20 @@ def main():
 
     logger.info("Visualizing generated mesh...")
     pc_to_mesh.visualize_mesh()
+
+    # # Step 2: Generate and visualize mesh
+    # logger.info("Generating mesh...")
+    # try:
+    #     # pc_to_mesh.generate_mesh(alpha=0.1)  # You may need to adjust alpha based on your data
+    #     pc_to_mesh.generate_mesh()  # You may need to adjust alpha based on your data
+    #     logger.info("Mesh generated successfully.")
+    # except Exception as e:
+    #     logger.error(f"Error generating mesh: {str(e)}")
+    #     return
+    #
+    #
+    # logger.info("Visualizing generated mesh...")
+    # pc_to_mesh.visualize_mesh()
 
     # Step 3: Apply texture mapping and visualize textured mesh
     logger.info("Applying texture mapping...")

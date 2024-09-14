@@ -2,6 +2,7 @@ import numpy as np
 import pyvista as pv
 import logging
 import os
+from scipy.spatial import cKDTree
 
 class PointCloudToMesh:
     """
@@ -38,13 +39,52 @@ class PointCloudToMesh:
         self.point_cloud = points
         self.logger.info(f"Point cloud set with {len(points)} points")
 
-    def generate_mesh(self, alpha=0.002):
+
+    def calculate_optimal_alpha(self, percentile=95):
+        """
+        Calculate an optimal alpha value for mesh generation based on point cloud characteristics.
+
+        This method uses the distance to the nearest neighbor for each point to estimate
+        an appropriate alpha value. It aims to create a mesh that captures the shape of the
+        point cloud without creating too many artifacts or holes.
+
+        Args:
+            percentile (int): Percentile of nearest neighbor distances to use for alpha calculation.
+                              Default is 95, which works well for most point clouds.
+
+        Returns:
+            float: The calculated optimal alpha value.
+        """
+        if self.point_cloud is None or len(self.point_cloud) < 2:
+            raise ValueError("Point cloud not set or has insufficient points")
+
+        self.logger.info("Calculating optimal alpha value...")
+
+        # Build a KD-tree for efficient nearest neighbor search
+        tree = cKDTree(self.point_cloud)
+
+        # Find the distance to the nearest neighbor for each point
+        distances, _ = tree.query(self.point_cloud, k=2)  # k=2 because the nearest neighbor of a point is itself
+        nearest_neighbor_distances = distances[:, 1]  # Take the second nearest neighbor (first is the point itself)
+
+        # Calculate the alpha value based on the specified percentile of nearest neighbor distances
+        alpha = np.percentile(nearest_neighbor_distances, percentile)
+
+        # Apply a scaling factor to fine-tune the alpha value
+        # This factor can be adjusted based on empirical results
+        scaling_factor = 2.0
+        alpha *= scaling_factor
+
+        self.logger.info(f"Calculated optimal alpha: {alpha:.6f}")
+        return alpha
+
+    def generate_mesh(self, alpha=None):
         """
         Generate a 3D mesh from the loaded point cloud data using Delaunay triangulation.
 
         Args:
-            alpha (float): The alpha value for the Delaunay triangulation algorithm.
-                           Lower values create a denser mesh. Default is 0.002.
+            alpha (float, optional): The alpha value for the Delaunay triangulation algorithm.
+                                     If None, calculates the optimal alpha value.
 
         Raises:
             ValueError: If no point cloud data has been loaded.
@@ -52,6 +92,9 @@ class PointCloudToMesh:
         if self.point_cloud is None:
             self.logger.error("No point cloud data loaded")
             raise ValueError("No point cloud data loaded. Use set_point_cloud() first.")
+
+        if alpha is None:
+            alpha = self.calculate_optimal_alpha()
 
         self.logger.info(f"Generating mesh with alpha={alpha}")
         try:
@@ -80,8 +123,8 @@ class PointCloudToMesh:
         except Exception as e:
             self.logger.error(f"Error generating mesh: {str(e)}")
             raise
-
-    # def generate_mesh(self, alpha: float = 0.002) -> None:  # BEST
+    #
+    # def generate_mesh(self, alpha=0.002):
     #     """
     #     Generate a 3D mesh from the loaded point cloud data using Delaunay triangulation.
     #
@@ -94,7 +137,7 @@ class PointCloudToMesh:
     #     """
     #     if self.point_cloud is None:
     #         self.logger.error("No point cloud data loaded")
-    #         raise ValueError("No point cloud data loaded. Use load_point_cloud_from_csv() first.")
+    #         raise ValueError("No point cloud data loaded. Use set_point_cloud() first.")
     #
     #     self.logger.info(f"Generating mesh with alpha={alpha}")
     #     try:
@@ -123,6 +166,7 @@ class PointCloudToMesh:
     #     except Exception as e:
     #         self.logger.error(f"Error generating mesh: {str(e)}")
     #         raise
+    #
 
     def visualize_mesh(self):
         """
