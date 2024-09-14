@@ -2,9 +2,12 @@ import numpy as np
 import pyvista as pv
 from PointCloudToMesh import PointCloudToMesh
 from TextureMapper import TextureMapper
+from MeshToOBJConverter import MeshToOBJConverter
 import logging
 import os
 import pandas as pd
+import traceback
+
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -101,9 +104,9 @@ def visualize_point_cloud(points, colors=None):
 def main():
     # Load point cloud from CSV
     # csv_file = "colored_sphere_point_cloud.csv"  # Replace with your CSV file name
-    csv_file = "colored_cube_point_cloud.csv"  # Replace with your CSV file name
+    # csv_file = "colored_cube_point_cloud.csv"  # Replace with your CSV file name
     # csv_file = "colored_torus_point_cloud.csv.csv"  # Replace with your CSV file name
-    # csv_file = "point_cloud.csv"  # Replace with your CSV file name
+    csv_file = "point_cloud.csv"  # Replace with your CSV file name
     logger.info(f"Loading point cloud from {csv_file}...")
     points, colors = load_point_cloud_from_csv(csv_file)
 
@@ -140,7 +143,7 @@ def main():
     texture_mapper.load_mesh(pc_to_mesh.mesh)
     texture_mapper.load_point_cloud_with_colors(points, colors)
     texture_mapper.map_colors_to_mesh()
-    texture_mapper.apply_uv_mapping()
+    texture_mapper.apply_smart_uv_mapping()
     texture_mapper.smooth_texture()
     textured_mesh = texture_mapper.get_textured_mesh()
 
@@ -149,13 +152,28 @@ def main():
     p.add_mesh(textured_mesh, rgb=True)
     p.show()
 
-    # Optionally, save the mesh
+    # Optionally, save the textured mesh .ply
     try:
         output_file = "output_mesh.ply"
         pc_to_mesh.save_mesh(output_file)
-        logger.info(f"Mesh saved as '{output_file}'")
+        logger.info(f"PLY Mesh saved as '{output_file}'")
     except Exception as e:
         logger.error(f"Error saving mesh: {str(e)}")
+
+    # Step 4: Convert to OBJ and save
+    logger.info("Converting textured mesh to OBJ format...")
+    converter = MeshToOBJConverter(textured_mesh, texture_mapper)
+
+    obj_filename = "output_mesh.obj"
+    texture_filename = "output_texture.png"
+
+    try:
+        converter.convert_and_save(obj_filename, texture_filename)
+        logger.info(f"OBJ file saved as {obj_filename}")
+        logger.info(f"Texture image saved as {texture_filename}")
+    except Exception as e:
+        logger.error(f"Error converting to OBJ: {str(e)}")
+        logger.error("Stack trace:\n" + traceback.format_exc())
 
 
 if __name__ == "__main__":

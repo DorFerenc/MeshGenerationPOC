@@ -176,3 +176,7 @@ old_shapes/
 */old_shapes/*.py
 */old_shapes/*.py
 /old_shapes/*.py
+
+*.mtl
+*.obj
+*.png
