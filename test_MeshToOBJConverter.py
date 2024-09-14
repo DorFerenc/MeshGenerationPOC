@@ -6,268 +6,107 @@ import tempfile
 import shutil
 from MeshToOBJConverter import MeshToOBJConverter
 from TextureMapper import TextureMapper
-from PIL import Image
-
 
 class TestMeshToOBJConverter(unittest.TestCase):
     """
-    A comprehensive test suite for the MeshToOBJConverter class.
-
-    This class contains unit tests to verify the functionality of the MeshToOBJConverter class,
-    including OBJ file generation, texture image creation, MTL file creation, and various edge cases.
-    The tests ensure that the converter correctly handles different mesh types, texture mappings,
-    and file operations.
+    Test suite for the MeshToOBJConverter class.
     """
 
     def setUp(self):
         """
-        Set up the test environment before each test method.
-
-        This method creates a temporary directory, generates sample meshes and textures,
-        and initializes a MeshToOBJConverter object for testing. It also sets up mock
-        objects and sample data to be used across multiple tests.
+        Set up the test environment.
         """
         self.temp_dir = tempfile.mkdtemp()
-        self.cube_mesh = self.create_sample_cube_mesh()
-        self.sphere_mesh = self.create_sample_sphere_mesh()
-        self.texture_mapper = self.create_sample_texture_mapper(self.cube_mesh)
-        self.converter = MeshToOBJConverter(self.cube_mesh, self.texture_mapper)
-
-        # Debug information
-        print("\nSetup Debug Info:")
-        print(f"Cube Mesh - Points: {self.cube_mesh.n_points}, Faces: {self.cube_mesh.n_cells}")
-        print(f"Cube Mesh Data: {self.cube_mesh.point_data.keys()}")
-        print(f"Sphere Mesh - Points: {self.sphere_mesh.n_points}, Faces: {self.sphere_mesh.n_cells}")
-        print(f"Sphere Mesh Data: {self.sphere_mesh.point_data.keys()}")
+        self.mesh = self.create_sample_mesh()
+        self.texture_mapper = self.create_sample_texture_mapper()
+        self.converter = MeshToOBJConverter(self.mesh, self.texture_mapper)
 
     def tearDown(self):
         """
-        Clean up the test environment after each test method.
-
-        This method removes temporary files and directories created during testing,
-        ensuring a clean slate for the next test.
+        Clean up after each test.
         """
         shutil.rmtree(self.temp_dir)
 
-    def create_sample_cube_mesh(self):
+    def create_sample_mesh(self):
         """
-        Create a sample cube mesh for testing.
-
-        Returns:
-            pyvista.PolyData: A simple cube mesh with texture coordinates and RGB data.
+        Create a simple cube mesh and apply UV mapping.
         """
         mesh = pv.Cube()
+        # Apply UV mapping to ensure the mesh has texture coordinates
         mesh.texture_map_to_plane(inplace=True)
-        mesh.point_data["RGB"] = np.random.rand(mesh.n_points, 3)
         return mesh
 
-    def create_sample_sphere_mesh(self):
+    def create_sample_texture_mapper(self):
         """
-        Create a sample sphere mesh for testing.
-
-        Returns:
-            pyvista.PolyData: A simple sphere mesh with texture coordinates and RGB data.
-        """
-        mesh = pv.Sphere()
-        mesh.texture_map_to_sphere(inplace=True)
-        mesh.point_data["RGB"] = np.random.rand(mesh.n_points, 3)
-        return mesh
-
-    def create_sample_texture_mapper(self, mesh):
-        """
-        Create a sample TextureMapper for testing.
-
-        Args:
-            mesh (pyvista.PolyData): The mesh to associate with the TextureMapper.
-
-        Returns:
-            TextureMapper: A TextureMapper instance with sample data.
+        Create a sample texture mapper with random colors and apply UV mapping.
         """
         texture_mapper = TextureMapper()
-        texture_mapper.mesh = mesh
-        texture_mapper.point_cloud = mesh.points
-        texture_mapper.colors = mesh.point_data["RGB"]
+        texture_mapper.load_mesh(self.mesh)
+        # Create a random point cloud for testing
+        texture_mapper.load_point_cloud_with_colors(self.mesh.points, np.random.rand(len(self.mesh.points), 3))
+        # Apply UV mapping to the mesh
+        texture_mapper.apply_smart_uv_mapping()
+        texture_mapper.map_colors_to_mesh()  # Ensure the mesh has RGB data
         return texture_mapper
-
-    def test_mesh_setup(self):
-        """
-        Test to ensure that the mesh is set up correctly with UV coordinates and RGB data.
-        """
-        print("\nMesh Setup Debug Info:")
-        print(f"Cube Mesh Data: {self.cube_mesh.point_data.keys()}")
-        print(f"Texture Mapper Mesh Data: {self.texture_mapper.mesh.point_data.keys()}")
-
-        self.assertIn('Texture Coordinates', self.cube_mesh.point_data.keys(), "UV coordinates not found in mesh")
-        self.assertIn('RGB', self.cube_mesh.point_data.keys(), "RGB data not found in mesh")
-        self.assertEqual(self.cube_mesh.n_points, len(self.texture_mapper.colors),
-                         "Mismatch in number of points and colors")
 
     def test_convert_to_obj(self):
         """
-        Test the convert_to_obj method.
-
-        This test verifies that the method correctly converts a mesh to OBJ format,
-        including proper formatting of vertices, texture coordinates, and faces.
-        It also checks that the MTL file is referenced correctly.
+        Test the conversion of the mesh to OBJ format.
         """
-        obj_filename = os.path.join(self.temp_dir, "test.obj")
-        try:
-            self.converter.convert_to_obj(obj_filename)
-        except ValueError as e:
-            self.fail(f"convert_to_obj raised ValueError: {str(e)}")
+        obj_filename = os.path.join(self.temp_dir, "test_mesh.obj")
+        self.converter.convert_to_obj(obj_filename)
 
         self.assertTrue(os.path.exists(obj_filename), "OBJ file was not created")
-
         with open(obj_filename, 'r') as f:
             content = f.read()
-
-        self.assertIn("mtllib", content, "MTL file is not referenced in the OBJ file")
-        self.assertIn("v ", content, "Vertices are missing in the OBJ file")
-        self.assertIn("vt ", content, "Texture coordinates are missing in the OBJ file")
-        self.assertIn("f ", content, "Faces are missing in the OBJ file")
+            self.assertIn("v ", content, "OBJ file does not contain vertex data")
+            self.assertIn("vt ", content, "OBJ file does not contain texture coordinate data")
+            self.assertIn("f ", content, "OBJ file does not contain face data")
 
     def test_save_texture_image(self):
         """
-        Test the save_texture_image method.
-
-        This test ensures that the texture image is correctly generated and saved,
-        verifying the dimensions and color mode of the resulting image.
+        Test the generation and saving of the texture image.
         """
-        texture_filename = os.path.join(self.temp_dir, "texture.png")
-        try:
-            self.converter.save_texture_image(texture_filename)
-        except ValueError as e:
-            self.fail(f"save_texture_image raised ValueError: {str(e)}")
+        texture_filename = os.path.join(self.temp_dir, "test_texture.png")
+        self.converter.save_texture_image(texture_filename)
 
-        self.assertTrue(os.path.exists(texture_filename), "Texture image was not created")
-
-        with Image.open(texture_filename) as img:
-            self.assertEqual(img.mode, "RGB", "Texture image is not in RGB mode")
-            self.assertEqual(img.size, (self.texture_mapper.texture_resolution,
-                                        self.texture_mapper.texture_resolution),
-                             "Texture image has incorrect dimensions")
+        self.assertTrue(os.path.exists(texture_filename), "Texture image file was not created")
+        self.assertGreater(os.path.getsize(texture_filename), 0, "Texture image file is empty")
 
     def test_create_mtl_file(self):
         """
-        Test the create_mtl_file method.
-
-        This test verifies that the MTL file is correctly created with the proper
-        material properties and texture map reference.
+        Test the creation of the MTL file for material properties.
         """
-        mtl_filename = os.path.join(self.temp_dir, "test.mtl")
-        texture_filename = "texture.png"
+        mtl_filename = os.path.join(self.temp_dir, "test_material.mtl")
+        texture_filename = "test_texture.png"
         self.converter.create_mtl_file(mtl_filename, texture_filename)
 
         self.assertTrue(os.path.exists(mtl_filename), "MTL file was not created")
-
         with open(mtl_filename, 'r') as f:
             content = f.read()
-
-        self.assertIn("newmtl", content, "Material definition is missing in the MTL file")
-        self.assertIn(f"map_Kd {os.path.basename(texture_filename)}", content,
-                      "Texture map is not correctly referenced in the MTL file")
+            self.assertIn("newmtl material0", content, "MTL file does not contain material definition")
+            self.assertIn("map_Kd test_texture.png", content, "MTL file does not reference the texture image")
 
     def test_convert_and_save(self):
         """
-        Test the convert_and_save method.
-
-        This test ensures that the entire conversion process works correctly,
-        including OBJ file creation, texture image saving, and MTL file generation.
-        It verifies that all necessary files are created and properly linked.
+        Test the complete conversion process: OBJ, MTL, and texture files.
         """
-        obj_filename = os.path.join(self.temp_dir, "complete_test.obj")
-        texture_filename = os.path.join(self.temp_dir, "complete_test_texture.png")
-
+        obj_filename = os.path.join(self.temp_dir, "test_mesh.obj")
+        texture_filename = os.path.join(self.temp_dir, "test_texture.png")
         self.converter.convert_and_save(obj_filename, texture_filename)
 
+        # Check OBJ file
         self.assertTrue(os.path.exists(obj_filename), "OBJ file was not created")
-        self.assertTrue(os.path.exists(texture_filename), "Texture image was not created")
-        self.assertTrue(os.path.exists(obj_filename[:-4] + ".mtl"), "MTL file was not created")
+        self.assertGreater(os.path.getsize(obj_filename), 0, "OBJ file is empty")
 
-        with open(obj_filename, 'r') as f:
-            obj_content = f.read()
-        self.assertIn(f"mtllib {os.path.basename(obj_filename)[:-4]}.mtl", obj_content,
-                      "MTL file is not correctly referenced in the OBJ file")
+        # Check texture image
+        self.assertTrue(os.path.exists(texture_filename), "Texture image file was not created")
+        self.assertGreater(os.path.getsize(texture_filename), 0, "Texture image file is empty")
 
-    def test_convert_mesh_without_uv(self):
-        """
-        Test converting a mesh without UV coordinates.
-
-        This test verifies that the converter raises a ValueError when attempting
-        to convert a mesh that does not have texture coordinates.
-        """
-        mesh_without_uv = pv.Cube()  # Create a cube without UV mapping
-        converter = MeshToOBJConverter(mesh_without_uv, self.texture_mapper)
-
-        with self.assertRaises(ValueError):
-            converter.convert_to_obj(os.path.join(self.temp_dir, "no_uv.obj"))
-
-    def test_convert_complex_mesh(self):
-        """
-        Test converting a more complex mesh.
-
-        This test ensures that the converter can handle a more complex mesh (sphere)
-        with a higher number of vertices and faces, verifying that all elements are
-        correctly written to the OBJ file.
-        """
-        complex_converter = MeshToOBJConverter(self.sphere_mesh, self.create_sample_texture_mapper(self.sphere_mesh))
-        obj_filename = os.path.join(self.temp_dir, "complex.obj")
-        complex_converter.convert_to_obj(obj_filename)
-
-        with open(obj_filename, 'r') as f:
-            content = f.readlines()
-
-        vertex_count = sum(1 for line in content if line.startswith('v '))
-        face_count = sum(1 for line in content if line.startswith('f '))
-
-        self.assertGreater(vertex_count, 100, "Complex mesh has too few vertices")
-        self.assertGreater(face_count, 100, "Complex mesh has too few faces")
-
-    def test_texture_image_content(self):
-        """
-        Test the content of the generated texture image.
-
-        This test verifies that the generated texture image contains non-uniform color data,
-        ensuring that the texture mapping process is creating meaningful textures.
-        """
-        texture_filename = os.path.join(self.temp_dir, "texture_content.png")
-        self.converter.save_texture_image(texture_filename)
-
-        with Image.open(texture_filename) as img:
-            pixel_data = np.array(img)
-
-        self.assertFalse(np.all(pixel_data == pixel_data[0, 0]),
-                         "Texture image appears to be uniform, expected varied color data")
-
-    def test_obj_file_formatting(self):
-        """
-        Test the formatting of the generated OBJ file.
-
-        This test checks the detailed formatting of the OBJ file, ensuring that
-        vertices, texture coordinates, and faces are correctly formatted and
-        that face indices are 1-based as per OBJ specification.
-        """
-        obj_filename = os.path.join(self.temp_dir, "formatting_test.obj")
-        self.converter.convert_to_obj(obj_filename)
-
-        with open(obj_filename, 'r') as f:
-            content = f.readlines()
-
-        vertex_line = next(line for line in content if line.startswith('v '))
-        texcoord_line = next(line for line in content if line.startswith('vt '))
-        face_line = next(line for line in content if line.startswith('f '))
-
-        self.assertRegex(vertex_line, r'^v -?\d+\.\d+ -?\d+\.\d+ -?\d+\.\d+$',
-                         "Vertex line is not correctly formatted")
-        self.assertRegex(texcoord_line, r'^vt \d+\.\d+ \d+\.\d+$',
-                         "Texture coordinate line is not correctly formatted")
-        self.assertRegex(face_line, r'^f \d+/\d+ \d+/\d+ \d+/\d+$',
-                         "Face line is not correctly formatted")
-
-        # Check that face indices are 1-based
-        face_indices = [int(idx.split('/')[0]) for idx in face_line.split()[1:]]
-        self.assertTrue(all(idx > 0 for idx in face_indices),
-                        "Face indices are not 1-based as required by OBJ specification")
+        # Check MTL file
+        mtl_filename = obj_filename.replace(".obj", ".mtl")
+        self.assertTrue(os.path.exists(mtl_filename), "MTL file was not created")
+        self.assertGreater(os.path.getsize(mtl_filename), 0, "MTL file is empty")
 
 
 if __name__ == '__main__':

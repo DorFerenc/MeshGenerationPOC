@@ -46,9 +46,7 @@ class MeshToOBJConverter:
             raise ValueError("Mesh does not have texture coordinates. Apply UV mapping before converting to OBJ.")
 
         vertices = self.mesh.points
-        faces = self.mesh.faces.reshape(-1, 4)[:,
-                1:]  # Remove the first column which indicates number of vertices per face
-        texture_coords = self.mesh.point_data['UV']
+        faces = self.mesh.faces
 
         with open(output_filename, 'w') as f:
             f.write("# OBJ file\n")
@@ -61,6 +59,7 @@ class MeshToOBJConverter:
                 f.write(f"v {v[0]} {v[1]} {v[2]}\n")
 
             # Write texture coordinates
+            texture_coords = self.mesh.point_data['UV']
             for vt in texture_coords:
                 f.write(f"vt {vt[0]} {1 - vt[1]}\n")  # Flip V coordinate
 
@@ -68,10 +67,58 @@ class MeshToOBJConverter:
             f.write("usemtl material0\n")
 
             # Write faces
-            for face in faces:
-                f.write(f"f {face[0] + 1}/{face[0] + 1} {face[1] + 1}/{face[1] + 1} {face[2] + 1}/{face[2] + 1}\n")
+            face_index = 0
+            while face_index < len(faces):
+                n_vertices = faces[face_index]  # First element is the number of vertices in the face
+                face_vertex_indices = faces[face_index + 1:face_index + 1 + n_vertices]
+                face_str = " ".join([f"{vi + 1}/{vi + 1}" for vi in face_vertex_indices])
+                f.write(f"f {face_str}\n")
+                face_index += n_vertices + 1
 
         self.logger.info(f"OBJ file saved as {output_filename}")
+
+    # def convert_to_obj(self, output_filename):
+    #     """
+    #     Convert the mesh to OBJ format and save it.
+    #
+    #     This method writes the mesh geometry (vertices, texture coordinates, and faces)
+    #     to an OBJ file.
+    #
+    #     Args:
+    #         output_filename (str): The name of the output OBJ file.
+    #
+    #     Raises:
+    #         ValueError: If the mesh does not have texture coordinates.
+    #     """
+    #     if 'UV' not in self.mesh.point_data:
+    #         raise ValueError("Mesh does not have texture coordinates. Apply UV mapping before converting to OBJ.")
+    #
+    #     vertices = self.mesh.points
+    #     faces = self.mesh.faces.reshape(-1, 4)[:, 1:]  # Remove the first column which indicates number of vertices per face
+    #     texture_coords = self.mesh.point_data['UV']
+    #
+    #     with open(output_filename, 'w') as f:
+    #         f.write("# OBJ file\n")
+    #
+    #         mtl_filename = output_filename.rsplit('.', 1)[0] + '.mtl'
+    #         f.write(f"mtllib {os.path.basename(mtl_filename)}\n")
+    #
+    #         # Write vertices
+    #         for v in vertices:
+    #             f.write(f"v {v[0]} {v[1]} {v[2]}\n")
+    #
+    #         # Write texture coordinates
+    #         for vt in texture_coords:
+    #             f.write(f"vt {vt[0]} {1 - vt[1]}\n")  # Flip V coordinate
+    #
+    #         f.write("g TexturedMesh\n")
+    #         f.write("usemtl material0\n")
+    #
+    #         # Write faces
+    #         for face in faces:
+    #             f.write(f"f {face[0] + 1}/{face[0] + 1} {face[1] + 1}/{face[1] + 1} {face[2] + 1}/{face[2] + 1}\n")
+    #
+    #     self.logger.info(f"OBJ file saved as {output_filename}")
 
     def save_texture_image(self, texture_filename):
         """
