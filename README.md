@@ -1,13 +1,14 @@
 # Mesh Generation POC
 
-This project demonstrates the process of generating a 3D mesh from point cloud data using the Delaunay triangulation algorithm. It includes functionality for loading point cloud data, generating a mesh, applying various refinement techniques, and saving the resulting mesh.
+This project demonstrates the process of generating a 3D mesh from point cloud data using the Delaunay triangulation algorithm. It includes functionality for generating colored point clouds, loading point cloud data, generating meshes with optimal alpha values, applying texture mapping, and visualizing the results.
 
 ## Features
 
+- Generate colored point clouds for various shapes (sphere, cube, torus)
 - Load point cloud data from CSV files
-- Generate 3D meshes using Delaunay triangulation
-- Apply mesh refinement techniques including Laplacian and bilateral smoothing
-- Visualize point clouds and generated meshes
+- Generate 3D meshes using Delaunay triangulation with automatic optimal alpha calculation
+- Apply texture mapping to the generated meshes
+- Visualize point clouds, generated meshes, and textured meshes
 - Save generated meshes in various formats (.ply, .vtp, .stl, .vtk)
 
 ## Requirements
@@ -16,47 +17,66 @@ To run this project, you need to have Python installed along with the following 
 
 ```
 pip install numpy
+pip install pandas
 pip install pyvista
-pip install gmsh
+pip install scipy
 ```
+
+## Project Structure
+
+- `GenColoredPointCloud.py`: Generates colored point clouds for different shapes
+- `PointCloudToMesh.py`: Contains the `PointCloudToMesh` class for mesh generation
+- `TextureMapper.py`: Contains the `TextureMapper` class for texture mapping
+- `app2.py`: Main application script that orchestrates the entire process
+- `test_PointCloudToMesh.py`: Unit tests for the `PointCloudToMesh` class
+
+## Process
+
+1. **Point Cloud Generation**:
+   - The `GenColoredPointCloud.py` script generates colored point clouds for sphere, cube, and torus shapes.
+   - Each point in the cloud has x, y, z coordinates and r, g, b color values.
+   - The generated point clouds are saved as CSV files.
+
+2. **Point Cloud Loading**:
+   - The `app2.py` script loads the point cloud data from a CSV file.
+   - If the loaded data doesn't include colors, it generates colors based on the points' positions.
+
+3. **Mesh Generation**:
+   - The `PointCloudToMesh` class handles the mesh generation process.
+   - It calculates an optimal alpha value for Delaunay triangulation based on the point cloud characteristics.
+   - The mesh is generated using the calculated alpha value, which helps in creating a mesh that best represents the original shape.
+
+4. **Texture Mapping**:
+   - The `TextureMapper` class applies texture to the generated mesh.
+   - It maps colors from the point cloud to the mesh vertices.
+   - A spherical UV mapping is applied to the mesh.
+   - The texture is smoothed to improve visual quality.
+
+5. **Visualization**:
+   - The process includes visualization steps for:
+     - The original point cloud
+     - The generated mesh
+     - The textured mesh
+   - Visualization is done using PyVista, providing interactive 3D views of each step.
+
+6. **Mesh Saving**:
+   - The final textured mesh can be saved in various formats (.ply, .vtp, .stl, .vtk) for further use or analysis.
 
 ## Usage
 
-### Point Cloud to Mesh
+To use this project:
 
-The main functionality is provided by the `PointCloudToMesh` class. Here's a basic usage example:
+1. Run `GenColoredPointCloud.py` to generate point cloud data:
+   ```
+   python GenColoredPointCloud.py
+   ```
 
-```python
-from PointCloudToMesh import PointCloudToMesh
+2. Run `app2.py` to process the point cloud, generate the mesh, and apply texturing:
+   ```
+   python app2.py
+   ```
 
-# Create an instance
-pc_to_mesh = PointCloudToMesh()
-
-# Load point cloud data
-pc_to_mesh.load_point_cloud_from_csv("path/to/your/pointcloud.csv")
-
-# Generate mesh
-pc_to_mesh.generate_mesh()
-
-# Refine mesh
-pc_to_mesh.refine_mesh()
-
-# Save the mesh (supported formats: .ply, .vtp, .stl, .vtk)
-pc_to_mesh.save_mesh("output_mesh.msh")
-
-# Visualize results
-pc_to_mesh.visualize_mesh()
-```
-
-### Mesh Generation Process
-
-1. Load point cloud data
-2. Apply Delaunay triangulation to create initial mesh
-3. Remove degenerate triangles
-4. Apply Laplacian smoothing
-5. Apply bilateral smoothing
-6. Save the resulting mesh in one of the supported formats (.ply, .vtp, .stl, .vtk)
-8. (Optional) Visualize the resulting mesh
+3. Follow the on-screen prompts to visualize each step of the process.
 
 ## Testing
 
@@ -66,18 +86,12 @@ To run the test suite:
 python -m unittest test_PointCloudToMesh.py
 ```
 
-## Additional Information
-
-- The project uses PyVista for mesh operations and visualization.
-- Logging is implemented to track the mesh generation and refinement process.
-- Error handling is in place to manage common issues in the mesh generation pipeline.
-- Generated meshes can be saved in .ply, .vtp, .stl, or .vtk formats for further use or analysis.
-
 ## Future Improvements
 
 - Implement more advanced mesh refinement techniques
-- Add support for different point cloud file formats
+- Add support for additional point cloud file formats
 - Optimize performance for large point cloud datasets
-- Support additional mesh file formats for saving
+- Enhance texture mapping for complex geometries
+- Implement automatic shape detection for optimal alpha calculation
 
 For more detailed information about the implementation, please refer to the source code and inline documentation.
