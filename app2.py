@@ -134,20 +134,6 @@ def main():
     logger.info("Visualizing generated mesh...")
     pc_to_mesh.visualize_mesh()
 
-    # # Step 2: Generate and visualize mesh
-    # logger.info("Generating mesh...")
-    # try:
-    #     # pc_to_mesh.generate_mesh(alpha=0.1)  # You may need to adjust alpha based on your data
-    #     pc_to_mesh.generate_mesh()  # You may need to adjust alpha based on your data
-    #     logger.info("Mesh generated successfully.")
-    # except Exception as e:
-    #     logger.error(f"Error generating mesh: {str(e)}")
-    #     return
-    #
-    #
-    # logger.info("Visualizing generated mesh...")
-    # pc_to_mesh.visualize_mesh()
-
     # Step 3: Apply texture mapping and visualize textured mesh
     logger.info("Applying texture mapping...")
     texture_mapper = TextureMapper()
