@@ -134,9 +134,6 @@ def visualize_mesh(mesh):
     plotter.show()
 
 def visualize_textured_mesh(mesh):
-    # plotter = pv.Plotter()
-    # plotter.add_mesh(mesh, texture=mesh.textures[0] if mesh.textures else None)
-    # plotter.show()
     plotter = pv.Plotter()
     if 'RGB' in mesh.point_data:
         plotter.add_mesh(mesh, scalars='RGB', rgb=True)
@@ -199,6 +196,7 @@ def main():
         logger.info("Process completed successfully.")
     except Exception as e:
         logger.error(f"Error in main process: {str(e)}")
+
 
 if __name__ == "__main__":
     main()
