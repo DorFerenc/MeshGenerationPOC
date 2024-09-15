@@ -146,17 +146,27 @@ class MeshToOBJConverter:
             self.logger.error(f"Error saving texture image: {str(e)}")
             raise
 
-    def create_mtl_file(self, mtl_filename, texture_filename):
+    def create_mtl_file(self, obj_filename, texture_filename):
         """
-        Create the Material Template Library (MTL) file.
+        Create the Material Template Library (MTL) file for the OBJ model.
 
-        This method generates an MTL file that defines the material properties
-        and references the texture image.
+        The MTL file defines the material properties of the 3D model, including
+        color, texture, and lighting characteristics. This method creates a basic
+        MTL file that references the texture image generated for the model.
 
         Args:
-            mtl_filename (str): The name of the output MTL file.
-            texture_filename (str): The name of the texture image file to be referenced.
+           obj_filename (str): The filename of the OBJ file. The MTL filename is derived from this.
+           texture_filename (str): The filename of the texture image to be referenced in the MTL file.
+
+        Note:
+           The MTL file is saved with the same name as the OBJ file but with a .mtl extension.
+           It defines a single material named 'material0' with default properties and links
+           to the specified texture file.
+
+        Raises:
+           IOError: If there's an error writing the MTL file.
         """
+        mtl_filename = obj_filename.rsplit('.', 1)[0] + '.mtl'
         with open(mtl_filename, 'w') as f:
             f.write("# MTL file\n")
             f.write("newmtl material0\n")
@@ -196,9 +206,9 @@ class MeshToOBJConverter:
         try:
             self.convert_to_obj(obj_filename)
             self.save_texture_image(texture_filename)
-
-            mtl_filename = obj_filename.rsplit('.', 1)[0] + '.mtl'
-            self.create_mtl_file(mtl_filename, texture_filename)
+            self.create_mtl_file(obj_filename, texture_filename)
+            self.logger.info(f"OBJ file saved as {obj_filename}")
+            self.logger.info(f"Texture image saved as {texture_filename}")
         except Exception as e:
             self.logger.error(f"Error in convert_and_save: {str(e)}")
             raise
