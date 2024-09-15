@@ -16,12 +16,40 @@ class OBJConverter:
         self.mesh = None
         self.texture_mapper = None
 
-    def convert(self, textured_mesh):
+    # def convert(self, textured_mesh):
+    #     """
+    #     Convert the textured mesh to OBJ format.
+    #
+    #     Args:
+    #         textured_mesh (pyvista.PolyData): The textured mesh to be converted.
+    #
+    #     Returns:
+    #         dict: A dictionary containing the OBJ content, MTL content, and texture image.
+    #
+    #     Raises:
+    #         OBJConversionError: If the conversion process fails.
+    #     """
+    #     try:
+    #         self.mesh = textured_mesh
+    #         obj_content = self.generate_obj_content()
+    #         mtl_content = self.generate_mtl_content()
+    #         texture_image = self.generate_texture_image()
+    #
+    #         return {
+    #             "obj_content": obj_content,
+    #             "mtl_content": mtl_content,
+    #             "texture_image": texture_image
+    #         }
+    #     except Exception as e:
+    #         raise OBJConversionError(f"Failed to convert mesh to OBJ: {str(e)}")
+    #
+    def convert(self, textured_mesh, output_folder):
         """
-        Convert the textured mesh to OBJ format.
+        Convert the textured mesh to OBJ format and save the results to disk.
 
         Args:
             textured_mesh (pyvista.PolyData): The textured mesh to be converted.
+            output_folder (str): The folder where the output files will be saved.
 
         Returns:
             dict: A dictionary containing the OBJ content, MTL content, and texture image.
@@ -35,6 +63,11 @@ class OBJConverter:
             mtl_content = self.generate_mtl_content()
             texture_image = self.generate_texture_image()
 
+            # Save files to the specified output folder
+            self.save_obj_file(os.path.join(output_folder, "model.obj"), obj_content)
+            self.save_mtl_file(os.path.join(output_folder, "material.mtl"), mtl_content)
+            self.save_texture_image(os.path.join(output_folder, "texture.png"), texture_image)
+
             return {
                 "obj_content": obj_content,
                 "mtl_content": mtl_content,
@@ -42,6 +75,20 @@ class OBJConverter:
             }
         except Exception as e:
             raise OBJConversionError(f"Failed to convert mesh to OBJ: {str(e)}")
+
+    def save_obj_file(self, filepath, content):
+        """Save the OBJ content to a file."""
+        with open(filepath, 'w') as file:
+            file.write(content)
+
+    def save_mtl_file(self, filepath, content):
+        """Save the MTL content to a file."""
+        with open(filepath, 'w') as file:
+            file.write(content)
+
+    def save_texture_image(self, filepath, image):
+        """Save the texture image to a file."""
+        image.save(filepath)
 
     def generate_obj_content(self):
         """
