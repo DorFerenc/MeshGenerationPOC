@@ -23,11 +23,14 @@ class PointCloudToMesh:
         self.point_cloud = None
         self.mesh = None
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.logger.setLevel(logging.INFO)
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        handler.setFormatter(formatter)
-        self.logger.addHandler(handler)
+        # self.point_cloud = None
+        # self.mesh = None
+        # self.logger = logging.getLogger(self.__class__.__name__)
+        # self.logger.setLevel(logging.INFO)
+        # handler = logging.StreamHandler()
+        # formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        # handler.setFormatter(formatter)
+        # self.logger.addHandler(handler)
 
     def set_point_cloud(self, points):
         """
@@ -36,8 +39,6 @@ class PointCloudToMesh:
         Args:
             points (np.ndarray): Array of 3D point coordinates.
         """
-        # self.point_cloud = points
-        # self.logger.info(f"Point cloud set with {len(points)} points")
         if len(points) == 0:
             raise ValueError("Point cloud cannot be empty")
         if points.shape[1] != 3:
@@ -70,7 +71,7 @@ class PointCloudToMesh:
 
         # Find the distance to the nearest neighbor for each point
         distances, _ = tree.query(self.point_cloud, k=2)  # k=2 because the nearest neighbor of a point is itself
-        nearest_neighbor_distances = distances[:, 1]  # Take the second nearest neighbor (first is the point itself)
+        nearest_neighbor_distances = distances[:, 1]  # Take the second-nearest neighbor (first is the point itself)
 
         # Calculate the alpha value based on the specified percentile of nearest neighbor distances
         alpha = np.percentile(nearest_neighbor_distances, percentile)
@@ -116,23 +117,43 @@ class PointCloudToMesh:
             self.logger.info(f"Mesh generated with {self.mesh.n_points} points and {n_cells} cells")
 
             # Compute and log mesh quality
-            quality = self.mesh.compute_cell_quality()
-            quality_array = quality['CellQuality']
-            if len(quality_array) > 0:
-                min_quality = np.min(quality_array)
-                max_quality = np.max(quality_array)
-                avg_quality = np.mean(quality_array)
-                self.logger.info(
-                    f"Mesh quality - Min: {min_quality:.4f}, Max: {max_quality:.4f}, Avg: {avg_quality:.4f}")
-            else:
-                self.logger.warning("Unable to compute mesh quality. No cells in the mesh.")
-
-            self.mesh = self.mesh.extract_surface()
+            self.log_mesh_quality()
             return self.mesh
-
         except Exception as e:
             self.logger.error(f"Error generating mesh: {str(e)}")
             raise
+
+    def log_mesh_quality(self):
+        """
+        Compute and log the quality metrics of the generated mesh.
+
+        This method calculates various quality metrics for the mesh cells, including
+        minimum, maximum, and average quality values. These metrics help assess the
+        overall quality of the generated mesh and can be used to identify potential
+        issues or areas for improvement in the mesh generation process.
+
+        The quality metric used is based on the ratio of the inscribed sphere radius
+        to the circumscribed sphere radius for each cell, scaled to [0, 1].
+
+        If the mesh has no cells, a warning is logged instead.
+
+        Note:
+            This method assumes that the mesh has already been generated and stored
+            in the `self.mesh` attribute.
+
+        Raises:
+            AttributeError: If `self.mesh` is None or doesn't have the required methods.
+        """
+        quality = self.mesh.compute_cell_quality()
+        quality_array = quality['CellQuality']
+        if len(quality_array) > 0:
+            min_quality = np.min(quality_array)
+            max_quality = np.max(quality_array)
+            avg_quality = np.mean(quality_array)
+            self.logger.info(
+                f"Mesh quality - Min: {min_quality:.4f}, Max: {max_quality:.4f}, Avg: {avg_quality:.4f}")
+        else:
+            self.logger.warning("Unable to compute mesh quality. No cells in the mesh.")
 
     def visualize_mesh(self):
         """
@@ -176,3 +197,16 @@ class PointCloudToMesh:
         except Exception as e:
             self.logger.error(f"Error saving mesh: {str(e)}")
             raise
+
+
+##########################################
+# OPTIONAL FOR UPGRADE
+###########################################
+class MeshRefiner:
+    @staticmethod
+    def refine_mesh(mesh):
+        # Implement mesh refinement techniques here
+        # For example:
+        # refined_mesh = mesh.smooth(n_iter=100, relaxation_factor=0.1)
+        # return refined_mesh
+        return mesh  # Placeholder, replace with actual refinement logic

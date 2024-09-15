@@ -1,17 +1,46 @@
 import numpy as np
 import pyvista as pv
-from PointCloudToMesh import PointCloudToMesh
+from PointCloudToMesh import PointCloudToMesh, MeshRefiner
 from TextureMapper import TextureMapper
 from MeshToOBJConverter import MeshToOBJConverter
 import logging
 import os
 import pandas as pd
 import traceback
+import multiprocessing
 
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+class MeshGenerator:
+    def __init__(self):
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.pc_to_mesh = PointCloudToMesh()
+        self.texture_mapper = TextureMapper()
+        self.mesh_refiner = MeshRefiner()
+
+    def generate_mesh(self, point_cloud):
+        self.pc_to_mesh.set_point_cloud(point_cloud)
+        return self.pc_to_mesh.generate_mesh()
+
+    def refine_mesh(self, mesh):
+        return self.mesh_refiner.refine_mesh(mesh)
+
+    def apply_texture(self, mesh, point_cloud, colors):
+        self.texture_mapper.load_mesh(mesh)
+        self.texture_mapper.load_point_cloud_with_colors(point_cloud, colors)
+        self.texture_mapper.apply_texture()
+        return self.texture_mapper.get_textured_mesh()
+
+    def save_as_obj(self, textured_mesh, obj_filename, texture_filename):
+        try:
+            converter = MeshToOBJConverter(textured_mesh, self.texture_mapper)
+            converter.convert_and_save(obj_filename, texture_filename)
+        except Exception as e:
+            self.logger.error(f"Error saving as OBJ: {str(e)}")
+            raise
 
 
 def load_point_cloud_from_csv(filename):
@@ -92,88 +121,159 @@ def visualize_point_cloud(points, colors=None):
         points (numpy.ndarray): Array of 3D point coordinates.
         colors (numpy.ndarray, optional): Array of RGB color values for each point.
     """
-    cloud = pv.PolyData(points)
+    plotter = pv.Plotter()
+    point_cloud = pv.PolyData(points)
     if colors is not None:
-        cloud.point_data["RGB"] = colors
+        point_cloud["colors"] = colors
+    plotter.add_mesh(point_cloud, render_points_as_spheres=True, point_size=5, rgb=True if colors is not None else False)
+    plotter.show()
 
-    p = pv.Plotter()
-    p.add_mesh(cloud, render_points_as_spheres=True, point_size=5, rgb=True if colors is not None else False)
-    p.show()
+def visualize_mesh(mesh):
+    plotter = pv.Plotter()
+    plotter.add_mesh(mesh, color='orange', show_edges=True)
+    plotter.show()
 
+def visualize_textured_mesh(mesh):
+    # plotter = pv.Plotter()
+    # plotter.add_mesh(mesh, texture=mesh.textures[0] if mesh.textures else None)
+    # plotter.show()
+    plotter = pv.Plotter()
+    if 'RGB' in mesh.point_data:
+        plotter.add_mesh(mesh, scalars='RGB', rgb=True)
+    else:
+        plotter.add_mesh(mesh, color='white')
+    plotter.show()
 
 def main():
     # Load point cloud from CSV
     # csv_file = "colored_sphere_point_cloud.csv"  # Replace with your CSV file name
     # csv_file = "colored_cube_point_cloud.csv"  # Replace with your CSV file name
     # csv_file = "colored_torus_point_cloud.csv.csv"  # Replace with your CSV file name
-    csv_file = "point_cloud.csv"  # Replace with your CSV file name
+    csv_file = "point_cloud.csv"
     logger.info(f"Loading point cloud from {csv_file}...")
     points, colors = load_point_cloud_from_csv(csv_file)
+
+    # Visualize point cloud
+    p = multiprocessing.Process(target=visualize_point_cloud, args=(points, colors))
+    p.start()
 
     # Generate colors if not present in the original data
     if colors is None:
         logger.info("No color data found. Generating colors based on height...")
-        colors = generate_colors(points, method='height')  # You can change the method if desired
+        colors = generate_colors(points, method='height')
 
-    # Step 1: Visualize point cloud
-    logger.info("Visualizing point cloud...")
-    visualize_point_cloud(points, colors)
-
-    # Create PointCloudToMesh object
-    pc_to_mesh = PointCloudToMesh()
-    pc_to_mesh.set_point_cloud(points)
-
-    # Step 2: Generate and visualize mesh
-    logger.info("Generating mesh...")
-    try:
-        # Calculate optimal alpha and generate mesh
-        optimal_alpha = pc_to_mesh.calculate_optimal_alpha()
-        pc_to_mesh.generate_mesh(alpha=optimal_alpha)
-        logger.info("Mesh generated successfully.")
-    except Exception as e:
-        logger.error(f"Error generating mesh: {str(e)}")
-        return
-
-    logger.info("Visualizing generated mesh...")
-    pc_to_mesh.visualize_mesh()
-
-    # Step 3: Apply texture mapping and visualize textured mesh
-    logger.info("Applying texture mapping...")
-    texture_mapper = TextureMapper()
-    texture_mapper.load_mesh(pc_to_mesh.mesh)
-    texture_mapper.load_point_cloud_with_colors(points, colors)
-    texture_mapper.map_colors_to_mesh()
-    texture_mapper.apply_smart_uv_mapping()
-    texture_mapper.smooth_texture()
-    textured_mesh = texture_mapper.get_textured_mesh()
-
-    logger.info("Visualizing textured mesh...")
-    p = pv.Plotter()
-    p.add_mesh(textured_mesh, rgb=True)
-    p.show()
-
-    # Optionally, save the textured mesh .ply
-    try:
-        output_file = "output_mesh.ply"
-        pc_to_mesh.save_mesh(output_file)
-        logger.info(f"PLY Mesh saved as '{output_file}'")
-    except Exception as e:
-        logger.error(f"Error saving mesh: {str(e)}")
-
-    # Step 4: Convert to OBJ and save
-    logger.info("Converting textured mesh to OBJ format...")
-    converter = MeshToOBJConverter(textured_mesh, texture_mapper)
-
-    obj_filename = "output_mesh.obj"
-    texture_filename = "output_texture.png"
+    # Create MeshGenerator instance
+    mesh_generator = MeshGenerator()
 
     try:
-        converter.convert_and_save(obj_filename, texture_filename)
-        logger.info(f"OBJ file saved as {obj_filename}")
-        logger.info(f"Texture image saved as {texture_filename}")
+        # Generate textured mesh
+        logger.info("Generating textured mesh...")
+        mesh = mesh_generator.generate_mesh(points)
+
+        # Visualize generated mesh
+        p = multiprocessing.Process(target=visualize_mesh, args=(mesh,))
+        p.start()
+
+        # Refine mesh
+        logger.info("Refining mesh...")
+        refined_mesh = mesh_generator.mesh_refiner.refine_mesh(mesh)
+
+        # Visualize refined mesh
+        p = multiprocessing.Process(target=visualize_mesh, args=(refined_mesh,))
+        p.start()
+
+        # Apply texture
+        logger.info("Applying texture...")
+        textured_mesh = mesh_generator.apply_texture(refined_mesh, points, colors)
+
+        # Visualize textured mesh
+        p = multiprocessing.Process(target=visualize_textured_mesh, args=(textured_mesh,))
+        p.start()
+
+        # Save as OBJ
+        obj_filename = "output_mesh.obj"
+        texture_filename = "output_texture.png"
+        logger.info("Converting textured mesh to OBJ format...")
+        mesh_generator.save_as_obj(textured_mesh, obj_filename, texture_filename)
+
+        logger.info("Process completed successfully.")
     except Exception as e:
-        logger.error(f"Error converting to OBJ: {str(e)}")
-        logger.error("Stack trace:\n" + traceback.format_exc())
+        logger.error(f"Error in main process: {str(e)}")
+
+
+# def main():
+#     # Load point cloud from CSV
+#     # csv_file = "colored_sphere_point_cloud.csv"  # Replace with your CSV file name
+#     # csv_file = "colored_cube_point_cloud.csv"  # Replace with your CSV file name
+#     # csv_file = "colored_torus_point_cloud.csv.csv"  # Replace with your CSV file name
+#     csv_file = "point_cloud.csv"  # Replace with your CSV file name
+#     logger.info(f"Loading point cloud from {csv_file}...")
+#     points, colors = load_point_cloud_from_csv(csv_file)
+#
+#     # Generate colors if not present in the original data
+#     if colors is None:
+#         logger.info("No color data found. Generating colors based on height...")
+#         colors = generate_colors(points, method='height')  # You can change the method if desired
+#
+#     # Step 1: Visualize point cloud
+#     logger.info("Visualizing point cloud...")
+#     visualize_point_cloud(points, colors)
+#
+#     # Create PointCloudToMesh object
+#     pc_to_mesh = PointCloudToMesh()
+#     pc_to_mesh.set_point_cloud(points)
+#
+#     # Step 2: Generate and visualize mesh
+#     logger.info("Generating mesh...")
+#     try:
+#         # Calculate optimal alpha and generate mesh
+#         optimal_alpha = pc_to_mesh.calculate_optimal_alpha()
+#         pc_to_mesh.generate_mesh(alpha=optimal_alpha)
+#         logger.info("Mesh generated successfully.")
+#     except Exception as e:
+#         logger.error(f"Error generating mesh: {str(e)}")
+#         return
+#
+#     logger.info("Visualizing generated mesh...")
+#     pc_to_mesh.visualize_mesh()
+#
+#     # Step 3: Apply texture mapping and visualize textured mesh
+#     logger.info("Applying texture mapping...")
+#     texture_mapper = TextureMapper()
+#     texture_mapper.load_mesh(pc_to_mesh.mesh)
+#     texture_mapper.load_point_cloud_with_colors(points, colors)
+#     texture_mapper.map_colors_to_mesh()
+#     texture_mapper.apply_smart_uv_mapping()
+#     texture_mapper.smooth_texture()
+#     textured_mesh = texture_mapper.get_textured_mesh()
+#
+#     logger.info("Visualizing textured mesh...")
+#     p = pv.Plotter()
+#     p.add_mesh(textured_mesh, rgb=True)
+#     p.show()
+#
+#     # Optionally, save the textured mesh .ply
+#     try:
+#         output_file = "output_mesh.ply"
+#         pc_to_mesh.save_mesh(output_file)
+#         logger.info(f"PLY Mesh saved as '{output_file}'")
+#     except Exception as e:
+#         logger.error(f"Error saving mesh: {str(e)}")
+#
+#     # Step 4: Convert to OBJ and save
+#     logger.info("Converting textured mesh to OBJ format...")
+#     converter = MeshToOBJConverter(textured_mesh, texture_mapper)
+#
+#     obj_filename = "output_mesh.obj"
+#     texture_filename = "output_texture.png"
+#
+#     try:
+#         converter.convert_and_save(obj_filename, texture_filename)
+#         logger.info(f"OBJ file saved as {obj_filename}")
+#         logger.info(f"Texture image saved as {texture_filename}")
+#     except Exception as e:
+#         logger.error(f"Error converting to OBJ: {str(e)}")
+#         logger.error("Stack trace:\n" + traceback.format_exc())
 
 
 if __name__ == "__main__":

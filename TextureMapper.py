@@ -18,12 +18,28 @@ class TextureMapper:
         texture_resolution (int): The resolution of the generated texture image.
     """
 
-    def __init__(self):
-        """Initialize the TextureMapper with default values."""
+    def __init__(self, texture_resolution=1024):
+        """
+        Initialize the TextureMapper with the specified texture resolution.
+
+        This class handles the process of applying textures to 3D meshes, including
+        color mapping, UV mapping, and texture smoothing.
+
+        Args:
+            texture_resolution (int, optional): The resolution of the generated texture image.
+                                                Higher values provide more detail but require more memory.
+                                                Defaults to 1024x1024.
+
+        Attributes:
+            mesh (pyvista.PolyData): The mesh to be textured.
+            point_cloud (numpy.ndarray): The point cloud data used for color mapping.
+            colors (numpy.ndarray): The color data corresponding to the point cloud.
+            texture_resolution (int): The resolution of the generated texture image.
+        """
         self.mesh = None
         self.point_cloud = None
         self.colors = None
-        self.texture_resolution = 1024
+        self.texture_resolution = texture_resolution
 
     def load_mesh(self, mesh):
         """
@@ -44,6 +60,27 @@ class TextureMapper:
         """
         self.point_cloud = points
         self.colors = colors
+
+    def apply_texture(self):
+        """
+        Apply the complete texturing process to the loaded mesh.
+
+        This method performs the following steps in order:
+        1. Maps colors from the point cloud to the mesh vertices.
+        2. Applies smart UV mapping based on the mesh geometry.
+        3. Smooths the texture to improve visual quality.
+
+        Note:
+            Before calling this method, ensure that a mesh has been loaded using `load_mesh()`
+            and point cloud data with colors has been loaded using `load_point_cloud_with_colors()`.
+
+        Raises:
+            ValueError: If the mesh or point cloud with colors hasn't been loaded.
+        """
+        self.map_colors_to_mesh()
+        self.smooth_texture()
+        # Apply UV mapping (if needed for OBJ export)
+        self.apply_smart_uv_mapping()
 
     def map_colors_to_mesh(self):
         """
