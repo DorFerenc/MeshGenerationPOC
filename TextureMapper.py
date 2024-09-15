@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.spatial import cKDTree, Delaunay
+from scipy.spatial import cKDTree
 from scipy import ndimage
 
 
@@ -262,86 +262,3 @@ class TextureMapper:
         if self.mesh is None:
             raise ValueError("Mesh must be loaded before getting textured mesh.")
         return self.mesh
-
-    # def find_optimal_alpha(self, max_components=1):
-    #     if self.point_cloud is None or len(self.point_cloud) < 4:
-    #         raise ValueError("Point cloud not set or has insufficient points")
-    #
-    #     # Compute Delaunay triangulation
-    #     tri = Delaunay(self.point_cloud)
-    #
-    #     # Compute alpha intervals for each simplex
-    #     alpha_intervals = self.compute_alpha_intervals(tri)
-    #
-    #     # Sort alpha values
-    #     all_alphas = sorted(set(a for interval in alpha_intervals for a in interval if a > 0))
-    #
-    #     # Find optimal alpha
-    #     for alpha in all_alphas:
-    #         complex = self.build_alpha_complex(tri, alpha_intervals, alpha)
-    #         if self.is_valid_complex(complex, max_components):
-    #             return alpha
-    #
-    #     # If no suitable alpha found, return the maximum alpha value
-    #     return all_alphas[-1]
-
-    def compute_alpha_intervals(self, tri):
-        # This is a simplified version. In practice, you'd need to implement
-        # the full algorithm to compute alpha intervals for each simplex
-        intervals = []
-        for simplex in tri.simplices:
-            points = self.point_cloud[simplex]
-            circumradius = self.compute_circumradius(points)
-            intervals.append((0, circumradius ** 2))
-        return intervals
-
-    def compute_circumradius(self, points):
-        # Compute the circumradius of a simplex
-        # This is a simplified version for tetrahedra
-        a, b, c, d = points
-        m = np.array([
-            [2 * (b - a).dot(b - a), 2 * (c - a).dot(b - a), 2 * (d - a).dot(b - a)],
-            [2 * (b - a).dot(c - a), 2 * (c - a).dot(c - a), 2 * (d - a).dot(c - a)],
-            [2 * (b - a).dot(d - a), 2 * (c - a).dot(d - a), 2 * (d - a).dot(d - a)]
-        ])
-        v = np.array([
-            (b - a).dot(b - a),
-            (c - a).dot(c - a),
-            (d - a).dot(d - a)
-        ])
-        center = np.linalg.solve(m, v)
-        radius = np.linalg.norm(center)
-        return radius
-
-    def build_alpha_complex(self, tri, alpha_intervals, alpha):
-        # Build the alpha complex for a given alpha value
-        complex = set()
-        for i, interval in enumerate(alpha_intervals):
-            if interval[0] <= alpha <= interval[1]:
-                complex.add(tuple(sorted(tri.simplices[i])))
-        return complex
-
-    def is_valid_complex(self, complex, max_components):
-        # Check if the complex satisfies our criteria
-        # This is a simplified version. In practice, you'd need to implement
-        # a more sophisticated algorithm to count connected components
-        # and ensure all points are included
-        vertices = set(v for simplex in complex for v in simplex)
-        return len(vertices) == len(self.point_cloud) and self.count_components(complex) <= max_components
-
-    def count_components(self, complex):
-        # Count the number of connected components
-        # This is a simplified version using a basic flood fill algorithm
-        vertices = set(v for simplex in complex for v in simplex)
-        components = 0
-        while vertices:
-            components += 1
-            start = vertices.pop()
-            queue = [start]
-            while queue:
-                v = queue.pop(0)
-                neighbors = set(n for simplex in complex if v in simplex for n in simplex)
-                neighbors &= vertices
-                vertices -= neighbors
-                queue.extend(neighbors)
-        return components
