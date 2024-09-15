@@ -70,11 +70,25 @@ class PointCloudToMesh:
 
         # Apply a scaling factor to fine-tune the alpha value
         # This factor can be adjusted based on empirical results
-        scaling_factor = 2.0
+        if self.is_cube_like():
+            scaling_factor = 25.2
+        else:
+            scaling_factor = 2.2
+        # alpha *= scaling_factor
+        # scaling_factor = 2.0
         alpha *= scaling_factor
 
         self.logger.info(f"Calculated optimal alpha: {alpha:.6f}")
         return alpha
+
+    # Overwrite to cube like stuff
+    def is_cube_like(self):
+        # Check if the point cloud resembles a cube
+        min_coords = np.min(self.point_cloud, axis=0)
+        max_coords = np.max(self.point_cloud, axis=0)
+        dimensions = max_coords - min_coords
+        aspect_ratios = dimensions / np.max(dimensions)
+        return np.all(aspect_ratios > 0.8)  # Consider it cube-like if all dimensions are similar
 
     def generate_mesh(self, alpha=None):
         """

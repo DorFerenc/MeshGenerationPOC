@@ -4,9 +4,7 @@ from PointCloudToMesh import PointCloudToMesh, MeshRefiner
 from TextureMapper import TextureMapper
 from MeshToOBJConverter import MeshToOBJConverter
 import logging
-import os
 import pandas as pd
-import traceback
 import multiprocessing
 
 
@@ -144,9 +142,9 @@ def visualize_textured_mesh(mesh):
 def main():
     # Load point cloud from CSV
     # csv_file = "colored_sphere_point_cloud.csv"  # Replace with your CSV file name
-    # csv_file = "colored_cube_point_cloud.csv"  # Replace with your CSV file name
+    csv_file = "colored_cube_point_cloud.csv"  # Replace with your CSV file name
     # csv_file = "colored_torus_point_cloud.csv.csv"  # Replace with your CSV file name
-    csv_file = "point_cloud.csv"
+    # csv_file = "point_cloud.csv"
     logger.info(f"Loading point cloud from {csv_file}...")
     points, colors = load_point_cloud_from_csv(csv_file)
 
