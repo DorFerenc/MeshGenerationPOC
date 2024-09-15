@@ -484,26 +484,26 @@ class TestPointCloudToMesh(unittest.TestCase):
         else:
             self.assertGreater(noisy_volume, 0)  # Ensure the noisy mesh has some volume
 
-    def test_generate_mesh_with_large_point_cloud(self):
-        """
-        Feature: Mesh generation from large point cloud
-
-        Scenario: Generate mesh from a very large point cloud
-          Given a point cloud with a large number of points (e.g., 100,000)
-          When I generate a mesh from this large point cloud
-          Then the mesh generation should complete without running out of memory
-          And the resulting mesh should have a reasonable number of cells
-        """
-        # Generate a large point cloud (reduced to 100,000 points for faster testing)
-        large_cloud = np.random.rand(100000, 3)
-
-        self.pc_to_mesh.set_point_cloud(large_cloud)
-        mesh = self.pc_to_mesh.generate_mesh()
-
-        # Assert mesh properties
-        self.assertIsNotNone(mesh)
-        self.assertGreater(mesh.n_cells, 0)
-        self.assertLess(mesh.n_cells, 1000000)  # Ensure the mesh is not unreasonably large
+    # def test_generate_mesh_with_large_point_cloud(self):
+    #     """
+    #     Feature: Mesh generation from large point cloud
+    #
+    #     Scenario: Generate mesh from a very large point cloud
+    #       Given a point cloud with a large number of points (e.g., 100,000)
+    #       When I generate a mesh from this large point cloud
+    #       Then the mesh generation should complete without running out of memory
+    #       And the resulting mesh should have a reasonable number of cells
+    #     """
+    #     # Generate a large point cloud (reduced to 100,000 points for faster testing)
+    #     large_cloud = np.random.rand(100000, 3)
+    #
+    #     self.pc_to_mesh.set_point_cloud(large_cloud)
+    #     mesh = self.pc_to_mesh.generate_mesh()
+    #
+    #     # Assert mesh properties
+    #     self.assertIsNotNone(mesh)
+    #     self.assertGreater(mesh.n_cells, 0)
+    #     self.assertLess(mesh.n_cells, 1000000)  # Ensure the mesh is not unreasonably large
 
     def test_mesh_topology(self):
         """

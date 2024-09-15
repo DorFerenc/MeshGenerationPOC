@@ -108,4 +108,10 @@ The tests cover the following:
 - Implement automatic shape detection for optimal alpha calculation
 - Improve OBJ conversion for better compatibility with various 3D software
 
+## Known Issues:
+
+- Does not support multiple materials
+- Optimal alpha does not always get found (overwrite with cube scenarios) 
+- Can add more refinement 
+
 For more detailed information about the implementation, please refer to the source code and inline documentation.
